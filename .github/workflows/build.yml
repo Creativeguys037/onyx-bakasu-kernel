@@ -47,10 +47,11 @@ jobs:
       - name: Configure kernel
         working-directory: ${{ runner.temp }}/kernel
         run: |
-          # Tuning: HZ 250 -> 300, drop stats/accounting overhead (defaults are n; delete =y lines to stay canonical)
+          # Tuning: HZ 250 -> 300; TASK_DELAY_ACCT off (default n).
+          # SCHEDSTATS/IRQ_TIME_ACCOUNTING must stay on: their symbols are in the KMI strict list.
           CONF=common/arch/arm64/configs/gki_defconfig
           grep -q '^CONFIG_HZ_300=y$' "$CONF" || sed -i '/^CONFIG_NR_CPUS=32$/a CONFIG_HZ_300=y' "$CONF"
-          sed -i '/^CONFIG_IRQ_TIME_ACCOUNTING=y$/d;/^CONFIG_TASK_DELAY_ACCT=y$/d;/^CONFIG_SCHEDSTATS=y$/d' "$CONF"
+          sed -i '/^CONFIG_TASK_DELAY_ACCT=y$/d' "$CONF"
           grep -n 'CONFIG_HZ_300=y' "$CONF"
           # CONFIG_KSU is tristate default y; keep gki_defconfig canonical for kleaf's savedefconfig check
           sed -i 's/^SUBLEVEL = 143$/SUBLEVEL = 118/' common/Makefile
@@ -87,8 +88,6 @@ jobs:
             grep -E "^CONFIG_KSU=|^CONFIG_HZ=|^CONFIG_SCHEDSTATS|^CONFIG_IRQ_TIME_ACCOUNTING|^CONFIG_TASK_DELAY_ACCT" "$CFG" || true
             grep -q "^CONFIG_KSU=y$" "$CFG"
             grep -q "^CONFIG_HZ=300$" "$CFG"
-            ! grep -q "^CONFIG_SCHEDSTATS=y" "$CFG"
-            ! grep -q "^CONFIG_IRQ_TIME_ACCOUNTING=y" "$CFG"
             ! grep -q "^CONFIG_TASK_DELAY_ACCT=y" "$CFG"
           fi
           strings "$IMG" | grep -m1 -iE "kernelsu|bakasu"
