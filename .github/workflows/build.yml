@@ -47,8 +47,7 @@ jobs:
       - name: Configure kernel
         working-directory: ${{ runner.temp }}/kernel
         run: |
-          echo "CONFIG_KSU=y" >> common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_TRACEPOINT_HOOK=y" >> common/arch/arm64/configs/gki_defconfig
+          # CONFIG_KSU is tristate default y; keep gki_defconfig canonical for kleaf's savedefconfig check
           sed -i 's/^SUBLEVEL = 143$/SUBLEVEL = 118/' common/Makefile
           grep -q '^SUBLEVEL = 118' common/Makefile
           python3 - <<'PY'
@@ -77,6 +76,13 @@ jobs:
           IMG=bazel-bin/common/kernel_aarch64/Image
           ls -l "$IMG"
           cat bazel-bin/common/kernel_aarch64/include/config/kernel.release
+          CFG=$(find out bazel-bin -maxdepth 7 -name .config 2>/dev/null | head -1)
+          echo "config: ${CFG:-none}"
+          if [ -n "$CFG" ]; then
+            grep -E "^CONFIG_KSU=|^CONFIG_KSU_TRACEPOINT_HOOK=" "$CFG" || true
+            grep -q "^CONFIG_KSU=y$" "$CFG"
+          fi
+          strings "$IMG" | grep -m1 -iE "kernelsu|bakasu"
           VERSION=$(strings "$IMG" | grep -m1 -o 'Linux version [^ ]*')
           echo "$VERSION"
           test "$VERSION" = "Linux version 6.6.118-android15-8-g0908354dac1b-ab16143355-4k"
