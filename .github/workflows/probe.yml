@@ -7,10 +7,7 @@ jobs:
     steps:
       - name: Probe
         run: |
-          m=common-android15-6.6-2026-01
-          curl -fsSL "https://android.googlesource.com/kernel/manifest/+/refs/heads/$m/default.xml?format=TEXT" | base64 -d > /tmp/mf
-          cat /tmp/mf
-          for inc in $(grep -oE 'include name="[^"]+"' /tmp/mf | cut -d'"' -f2); do
-            echo "=== include: $inc"
-            curl -fsSL "https://android.googlesource.com/kernel/manifest/+/refs/heads/$m/$inc?format=TEXT" | base64 -d > /tmp/m2 && grep -nE 'name="build/kernel"|build/kernel' /tmp/m2 | head -3
-          done
+          b=common-android15-6.6-2026-01
+          curl -fsSL "https://android.googlesource.com/kernel/build/+/refs/heads/$b/kleaf/workspace_status_stamp.py?format=TEXT" | base64 -d > /tmp/f
+          echo "size=$(wc -c < /tmp/f)"
+          grep -nE "def collect|super\(\)\.collect\(\)|class " /tmp/f | head -20
