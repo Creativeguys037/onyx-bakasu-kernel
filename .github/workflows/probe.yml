@@ -7,7 +7,12 @@ jobs:
     steps:
       - name: Probe
         run: |
-          b=common-android15-6.6-2026-01
-          curl -fsSL "https://android.googlesource.com/kernel/build/+/refs/heads/$b/kleaf/workspace_status_stamp.py?format=TEXT" | base64 -d > /tmp/f
-          echo "size=$(wc -c < /tmp/f)"
-          grep -nE "def collect|super\(\)\.collect\(\)|class " /tmp/f | head -20
+          m=common-android15-6.6-2026-01
+          curl -fsSL "https://android.googlesource.com/kernel/manifest/+/refs/heads/$m/default.xml?format=TEXT" | base64 -d > /tmp/mf
+          echo "--- first 12 lines:"; head -12 /tmp/mf
+          for ref in refs/heads/main refs/heads/master refs/heads/$m; do
+            echo "== kernel/build $ref"
+            code=$(curl -s -o /tmp/f -w "%{http_code}" "https://android.googlesource.com/kernel/build/+/$ref/kleaf/workspace_status_stamp.py?format=TEXT")
+            echo "http=$code size=$(wc -c < /tmp/f)"
+            [ "$code" = 200 ] && { base64 -d < /tmp/f > /tmp/f2 2>/dev/null; grep -n "def collect\|super().collect()" /tmp/f2 | head -6; }
+          done
