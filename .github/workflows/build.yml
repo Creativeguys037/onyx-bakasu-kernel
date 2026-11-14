@@ -32,7 +32,7 @@ jobs:
           cd "$RUNNER_TEMP/kernel"
           git config --global user.name ci
           git config --global user.email ci@localhost
-          "$HOME/bin/repo" init -u https://android.googlesource.com/kernel/manifest -b common-android15-6.6-2026-10 --no-repo-verify
+          "$HOME/bin/repo" init -u https://android.googlesource.com/kernel/manifest -b common-android15-6.6-2026-01 --no-repo-verify
           "$HOME/bin/repo" sync -c -j4 --no-tags --fail-fast
           df -h /
 
@@ -47,14 +47,12 @@ jobs:
       - name: Configure kernel
         working-directory: ${{ runner.temp }}/kernel
         run: |
-          # Tuning: HZ 250 -> 300; TASK_DELAY_ACCT off (default n).
-          # SCHEDSTATS/IRQ_TIME_ACCOUNTING must stay on: their symbols are in the KMI strict list.
+          # Tuning: HZ 250 -> 300 only. SCHEDSTATS/IRQ_TIME_ACCOUNTING/TASK_DELAY_ACCT
+          # stay stock: KMI strict symbols / vendor module compatibility.
           CONF=common/arch/arm64/configs/gki_defconfig
           grep -q '^CONFIG_HZ_300=y$' "$CONF" || sed -i '/^CONFIG_NR_CPUS=32$/a CONFIG_HZ_300=y' "$CONF"
-          sed -i '/^CONFIG_TASK_DELAY_ACCT=y$/d' "$CONF"
           grep -n 'CONFIG_HZ_300=y' "$CONF"
           # CONFIG_KSU is tristate default y; keep gki_defconfig canonical for kleaf's savedefconfig check
-          sed -i 's/^SUBLEVEL = 143$/SUBLEVEL = 118/' common/Makefile
           grep -q '^SUBLEVEL = 118' common/Makefile
           python3 - <<'PY'
           import pathlib
@@ -88,7 +86,6 @@ jobs:
             grep -E "^CONFIG_KSU=|^CONFIG_HZ=|^CONFIG_SCHEDSTATS|^CONFIG_IRQ_TIME_ACCOUNTING|^CONFIG_TASK_DELAY_ACCT" "$CFG" || true
             grep -q "^CONFIG_KSU=y$" "$CFG"
             grep -q "^CONFIG_HZ=300$" "$CFG"
-            ! grep -q "^CONFIG_TASK_DELAY_ACCT=y" "$CFG"
           fi
           strings "$IMG" | grep -m1 -iE "kernelsu|bakasu"
           VERSION=$(strings "$IMG" | grep -m1 -o 'Linux version [^ ]*')
