@@ -7,10 +7,12 @@ jobs:
     steps:
       - name: Probe
         run: |
-          b=android15-6.6-2026-01
-          for p in build/kernel/kleaf/workspace_status_stamp.py build/kernel/kleaf/workspace_status.py; do
-            echo "== $p"
-            curl -fsSL "https://android.googlesource.com/kernel/common/+/refs/heads/$b/$p?format=TEXT" | base64 -d > /tmp/f || { echo fetch_fail; continue; }
-            grep -nE "class .*Stamp|def collect|SCMVERSION|stamp" /tmp/f | head -12
-            grep -n "super().collect()" /tmp/f | head -3
-          done
+          m=common-android15-6.6-2026-01
+          curl -fsSL "https://android.googlesource.com/kernel/manifest/+/refs/heads/$m/default.xml?format=TEXT" | base64 -d > /tmp/mf
+          echo "--- build/kernel entries:"; grep -n 'name="build/kernel"' /tmp/mf | head -3
+          rev=$(grep 'name="build/kernel"' /tmp/mf | sed -E 's/.*revision="([^"]+)".*/\1/' | head -1)
+          echo "rev=$rev"
+          curl -fsSL "https://android.googlesource.com/kernel/build/+/$rev/kleaf/workspace_status_stamp.py?format=TEXT" | base64 -d > /tmp/f
+          echo "size=$(wc -c < /tmp/f)"
+          grep -n "def collect" /tmp/f | head -5
+          grep -n "super().collect()" /tmp/f | head -5
