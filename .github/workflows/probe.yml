@@ -7,12 +7,10 @@ jobs:
     steps:
       - name: Probe
         run: |
-          for m in 2025-10 2026-01 2026-02 2026-03 2026-04 2026-05 2026-06 2026-07 2026-08 2026-09 2026-10; do
-            b=android15-6.6-$m
-            echo "== $b"
-            curl -fsSL "https://android.googlesource.com/kernel/common/+/refs/heads/$b/Makefile?format=TEXT" | base64 -d | grep -E "^(VERSION|PATCHLEVEL|SUBLEVEL|EXTRAVERSION) =" | tr '\n' ' ' || echo makefile_fail
-            echo
-            curl -fsSL "https://android.googlesource.com/kernel/common/+/refs/heads/$b/arch/arm64/configs/gki_defconfig?format=TEXT" | base64 -d > /tmp/d || { echo defconfig_fail; continue; }
-            grep -E "MEMFD_ASHMEM_SHIM|^CONFIG_TLS=|STREAM_PARSER|NINTENDO_FF|SAFESETID|USB_XHCI_PCI" /tmp/d | tr '\n' '|' || true
-            echo
-          done
+          b=android15-6.6-2026-01
+          curl -fsSL "https://android.googlesource.com/kernel/common/+/refs/heads/$b/Makefile?format=TEXT" | base64 -d | grep -E "^(VERSION|PATCHLEVEL|SUBLEVEL) ="
+          curl -fsSL "https://android.googlesource.com/kernel/common/+/refs/heads/$b/arch/arm64/configs/gki_defconfig?format=TEXT" | base64 -d > /tmp/d
+          echo "--- defconfig size: $(wc -l < /tmp/d)"
+          grep -nE "NR_CPUS|TASK_DELAY_ACCT|SCHEDSTATS|IRQ_TIME_ACCOUNTING|HZ" /tmp/d
+          echo "--- full defconfig ---"
+          cat /tmp/d
