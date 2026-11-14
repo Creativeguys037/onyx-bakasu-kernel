@@ -9,10 +9,8 @@ jobs:
         run: |
           m=common-android15-6.6-2026-01
           curl -fsSL "https://android.googlesource.com/kernel/manifest/+/refs/heads/$m/default.xml?format=TEXT" | base64 -d > /tmp/mf
-          echo "--- build/kernel entries:"; grep -n 'name="build/kernel"' /tmp/mf | head -3
-          rev=$(grep 'name="build/kernel"' /tmp/mf | sed -E 's/.*revision="([^"]+)".*/\1/' | head -1)
-          echo "rev=$rev"
-          curl -fsSL "https://android.googlesource.com/kernel/build/+/$rev/kleaf/workspace_status_stamp.py?format=TEXT" | base64 -d > /tmp/f
-          echo "size=$(wc -c < /tmp/f)"
-          grep -n "def collect" /tmp/f | head -5
-          grep -n "super().collect()" /tmp/f | head -5
+          cat /tmp/mf
+          for inc in $(grep -oE 'include name="[^"]+"' /tmp/mf | cut -d'"' -f2); do
+            echo "=== include: $inc"
+            curl -fsSL "https://android.googlesource.com/kernel/manifest/+/refs/heads/$m/$inc?format=TEXT" | base64 -d > /tmp/m2 && grep -nE 'name="build/kernel"|build/kernel' /tmp/m2 | head -3
+          done
