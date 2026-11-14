@@ -47,6 +47,11 @@ jobs:
       - name: Configure kernel
         working-directory: ${{ runner.temp }}/kernel
         run: |
+          # Tuning: HZ 250 -> 300, drop stats/accounting overhead (defaults are n; delete =y lines to stay canonical)
+          CONF=common/arch/arm64/configs/gki_defconfig
+          grep -q '^CONFIG_HZ_300=y$' "$CONF" || echo 'CONFIG_HZ_300=y' >> "$CONF"
+          sed -i '/^CONFIG_IRQ_TIME_ACCOUNTING=y$/d;/^CONFIG_TASK_DELAY_ACCT=y$/d;/^CONFIG_SCHEDSTATS=y$/d' "$CONF"
+          grep -c '^CONFIG_HZ_300=y$' "$CONF"
           # CONFIG_KSU is tristate default y; keep gki_defconfig canonical for kleaf's savedefconfig check
           sed -i 's/^SUBLEVEL = 143$/SUBLEVEL = 118/' common/Makefile
           grep -q '^SUBLEVEL = 118' common/Makefile
@@ -79,8 +84,12 @@ jobs:
           CFG=$(find out bazel-bin -maxdepth 7 -name .config 2>/dev/null | head -1)
           echo "config: ${CFG:-none}"
           if [ -n "$CFG" ]; then
-            grep -E "^CONFIG_KSU=|^CONFIG_KSU_TRACEPOINT_HOOK=" "$CFG" || true
+            grep -E "^CONFIG_KSU=|^CONFIG_HZ=|^CONFIG_SCHEDSTATS|^CONFIG_IRQ_TIME_ACCOUNTING|^CONFIG_TASK_DELAY_ACCT" "$CFG" || true
             grep -q "^CONFIG_KSU=y$" "$CFG"
+            grep -q "^CONFIG_HZ=300$" "$CFG"
+            ! grep -q "^CONFIG_SCHEDSTATS=y" "$CFG"
+            ! grep -q "^CONFIG_IRQ_TIME_ACCOUNTING=y" "$CFG"
+            ! grep -q "^CONFIG_TASK_DELAY_ACCT=y" "$CFG"
           fi
           strings "$IMG" | grep -m1 -iE "kernelsu|bakasu"
           VERSION=$(strings "$IMG" | grep -m1 -o 'Linux version [^ ]*')
@@ -95,6 +104,8 @@ jobs:
           cp bazel-bin/common/kernel_aarch64/Image "$GITHUB_WORKSPACE/out/Image"
           cp bazel-bin/common/kernel_aarch64/include/config/kernel.release "$GITHUB_WORKSPACE/out/kernel.release"
           strings bazel-bin/common/kernel_aarch64/Image | grep -m1 'Linux version' > "$GITHUB_WORKSPACE/out/version.txt"
+          CFG=$(find out bazel-bin -maxdepth 7 -name .config 2>/dev/null | head -1)
+          [ -n "$CFG" ] && cp "$CFG" "$GITHUB_WORKSPACE/out/config.txt" || true
           ls -l "$GITHUB_WORKSPACE/out"
 
       - name: Upload Image
