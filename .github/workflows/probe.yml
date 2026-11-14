@@ -8,9 +8,9 @@ jobs:
       - name: Probe
         run: |
           b=android15-6.6-2026-01
-          curl -fsSL "https://android.googlesource.com/kernel/common/+/refs/heads/$b/Makefile?format=TEXT" | base64 -d | grep -E "^(VERSION|PATCHLEVEL|SUBLEVEL) ="
-          curl -fsSL "https://android.googlesource.com/kernel/common/+/refs/heads/$b/arch/arm64/configs/gki_defconfig?format=TEXT" | base64 -d > /tmp/d
-          echo "--- defconfig size: $(wc -l < /tmp/d)"
-          grep -nE "NR_CPUS|TASK_DELAY_ACCT|SCHEDSTATS|IRQ_TIME_ACCOUNTING|HZ" /tmp/d
-          echo "--- full defconfig ---"
-          cat /tmp/d
+          for p in build/kernel/kleaf/workspace_status_stamp.py build/kernel/kleaf/workspace_status.py; do
+            echo "== $p"
+            curl -fsSL "https://android.googlesource.com/kernel/common/+/refs/heads/$b/$p?format=TEXT" | base64 -d > /tmp/f || { echo fetch_fail; continue; }
+            grep -nE "class .*Stamp|def collect|SCMVERSION|stamp" /tmp/f | head -12
+            grep -n "super().collect()" /tmp/f | head -3
+          done
