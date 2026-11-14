@@ -7,7 +7,7 @@ jobs:
     steps:
       - name: Probe
         run: |
-          for m in 2026-03 2026-04 2026-05 2026-06 2026-07 2026-08 2026-09 2026-10; do
+          for m in 2025-10 2026-01 2026-02 2026-03 2026-04 2026-05 2026-06 2026-07 2026-08 2026-09 2026-10; do
             b=android15-6.6-$m
             echo "== $b"
             curl -fsSL "https://android.googlesource.com/kernel/common/+/refs/heads/$b/Makefile?format=TEXT" | base64 -d | grep -E "^(VERSION|PATCHLEVEL|SUBLEVEL|EXTRAVERSION) =" | tr '\n' ' ' || echo makefile_fail
